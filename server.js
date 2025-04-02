@@ -18,13 +18,16 @@ app.get("/proxy", (req, res) => {
     return res.status(400).send("URL parameter is required");
   }
 
-  request(
-    { url, headers: { "User-Agent": "Mozilla/5.0" } },
-    (error, response, body) => {
-      if (error) return res.status(500).send("Error fetching URL");
-      res.send(body);
-    }
-  );
+  // Set appropriate headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  // Pipe the request directly to the response to handle binary data
+  request
+    .get(url)
+    .on("error", (err) => {
+      res.status(500).send("Error fetching the URL");
+    })
+    .pipe(res);
 });
 
 // Start server
