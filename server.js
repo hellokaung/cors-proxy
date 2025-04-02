@@ -1,36 +1,32 @@
-const express = require("express");
-const cors = require("cors");
-const request = require("request");
+export default {
+  async fetch(request) {
+    const url = new URL(request.url);
+    const targetUrl = url.searchParams.get("url");
 
-const app = express();
-const PORT = process.env.PORT || 8080;
+    if (!targetUrl) {
+      return new Response("URL parameter is required", { status: 400 });
+    }
 
-app.use(cors());
+    try {
+      const response = await fetch(targetUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0",
+        },
+      });
 
-app.get("/", (req, res) => {
-  res.send("CORS Proxy is running!");
-});
+      const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      };
 
-// Proxy Endpoint
-app.get("/proxy", (req, res) => {
-  const url = req.query.url;
-  if (!url) {
-    return res.status(400).send("URL parameter is required");
-  }
+      return new Response(response.body, {
+        status: response.status,
+        headers: { ...corsHeaders },
+      });
 
-  // Set appropriate headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
-  // Pipe the request directly to the response to handle binary data
-  request
-    .get(url)
-    .on("error", (err) => {
-      res.status(500).send("Error fetching the URL");
-    })
-    .pipe(res);
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`CORS Proxy running on http://localhost:${PORT}`);
-});
+    } catch (error) {
+      return new Response("Error fetching URL", { status: 500 });
+    }
+  },
+};
